@@ -1,3 +1,4 @@
+import { notifyAnnouncement } from './notify'
 import { supabase } from './supabase'
 
 export interface Announcement {
@@ -79,6 +80,8 @@ export async function postAnnouncement(
     .from('announcements')
     .insert({ author_id: authorId, message, image_url: imageUrl })
   if (error) throw error
+
+  void notifyAnnouncement(authorId, message)
 }
 
 export async function deleteAnnouncement(id: string): Promise<void> {
