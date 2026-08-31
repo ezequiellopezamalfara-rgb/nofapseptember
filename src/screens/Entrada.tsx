@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { ensureAnonymousSession, setAppSession, type AppSession } from '../lib/auth'
+import { isIosSafariNotInstalled, subscribeToPush } from '../lib/push'
 import { claimUser, nameExists } from '../lib/users'
 
-type Step = 'access' | 'name' | 'pin'
+type Step = 'access' | 'name' | 'pin' | 'push'
 
 interface EntradaProps {
   onDone: (session: AppSession) => void
@@ -16,6 +17,7 @@ export function Entrada({ onDone }: EntradaProps) {
   const [isNewName, setIsNewName] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [newSession, setNewSession] = useState<AppSession | null>(null)
 
   useEffect(() => {
     ensureAnonymousSession().catch(() => {
@@ -65,12 +67,26 @@ export function Entrada({ onDone }: EntradaProps) {
     try {
       const user = await claimUser(name, pin)
       setAppSession(user)
-      onDone(user)
+      setNewSession(user)
+      setStep('push')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'PIN incorrecto.')
       setPin('')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function handleActivatePush() {
+    if (!newSession) return
+    setSubmitting(true)
+    try {
+      await subscribeToPush(newSession.id)
+    } catch {
+      // no bloquea el alta si falla la suscripción
+    } finally {
+      setSubmitting(false)
+      onDone(newSession)
     }
   }
 
@@ -142,6 +158,46 @@ export function Entrada({ onDone }: EntradaProps) {
             {submitting ? 'Confirmando...' : isNewName ? 'Crear cuenta' : 'Confirmar'}
           </button>
         </form>
+      )}
+
+      {step === 'push' && newSession && (
+        <div className="flex w-full max-w-xs flex-col gap-3">
+          {isIosSafariNotInstalled() ? (
+            <div className="border-2 border-alert bg-cream px-4 py-3">
+              <p className="font-stencil text-xs text-alert">Instalá la app para recibir avisos</p>
+              <p className="mt-2 font-serif text-sm text-ink">
+                En iPhone, Safari no permite notificaciones sin instalar. Tocá el botón{' '}
+                <strong>Compartir</strong> y elegí <strong>Agregar a pantalla de inicio</strong>.
+              </p>
+              <button
+                onClick={() => onDone(newSession)}
+                className="font-stencil mt-3 w-full border-2 border-ink bg-brown-dark px-4 py-3 text-cream"
+              >
+                Entendido
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-center font-serif text-sm text-ink-light">
+                Recibí un aviso a las 9 y a las 21 si te falta reportar, y cuando alguien caiga en
+                combate.
+              </p>
+              <button
+                onClick={handleActivatePush}
+                disabled={submitting}
+                className="font-stencil border-2 border-ink bg-brown-dark px-4 py-3 text-cream disabled:opacity-50"
+              >
+                {submitting ? 'Activando...' : 'Activar notificaciones'}
+              </button>
+              <button
+                onClick={() => onDone(newSession)}
+                className="font-stencil text-xs text-ink-light underline"
+              >
+                Ahora no
+              </button>
+            </>
+          )}
+        </div>
       )}
     </div>
   )

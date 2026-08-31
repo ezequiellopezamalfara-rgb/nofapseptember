@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { confirmCheckIn } from '../lib/entries'
+import { notifyFall } from '../lib/notify'
 import { OBJECTIVES, type ObjectiveKey } from '../lib/objectives'
 import type { EntryStatus } from '../lib/scoring'
 
 interface CheckInProps {
   /** Fecha (AR, 'YYYY-MM-DD') del día que se está reportando — siempre ayer. */
   date: string
+  userId: string
+  userName: string
+  /** Racha personal antes de este check-in — si cae, es la racha que pierde. */
+  currentStreak: number
   onDone: () => void
 }
 
@@ -14,7 +19,7 @@ function formatDate(date: string): string {
   return `${d}/${m}`
 }
 
-export function CheckIn({ date, onDone }: CheckInProps) {
+export function CheckIn({ date, userId, userName, currentStreak, onDone }: CheckInProps) {
   const [status, setStatus] = useState<EntryStatus | null>(null)
   const [objectives, setObjectives] = useState<Partial<Record<ObjectiveKey, boolean>>>({})
   const [submitting, setSubmitting] = useState(false)
@@ -30,6 +35,7 @@ export function CheckIn({ date, onDone }: CheckInProps) {
     setError(null)
     try {
       await confirmCheckIn(date, status, objectives)
+      if (status === 'caido') void notifyFall(userId, userName, currentStreak)
       onDone()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar el reporte.')

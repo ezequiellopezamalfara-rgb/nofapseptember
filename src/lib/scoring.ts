@@ -1,6 +1,11 @@
-import { CHALLENGE_END_DATE, CHALLENGE_START_DATE } from './challenge'
-import { addDays, compareDates, toArgentinaDate, type CalendarDate } from './date'
-import { DAILY_OBJECTIVE_CAP, MONTHLY_OBJECTIVE_CAP, OBJECTIVES, type ObjectiveKey } from './objectives'
+import { CHALLENGE_END_DATE, CHALLENGE_START_DATE } from './challenge.js'
+import { addDays, compareDates, toArgentinaDate, type CalendarDate } from './date.js'
+import {
+  DAILY_OBJECTIVE_CAP,
+  MONTHLY_OBJECTIVE_CAP,
+  OBJECTIVES,
+  type ObjectiveKey,
+} from './objectives.js'
 
 export type EntryStatus = 'en_pie' | 'caido'
 

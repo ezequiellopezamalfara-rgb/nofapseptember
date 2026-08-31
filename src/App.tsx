@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { InstallBanner } from './components/InstallBanner'
 import { TabBar, type Tab } from './components/TabBar'
 import { getAppSession, type AppSession } from './lib/auth'
 import { fetchAllUsersWithEntries, type UserWithEntries } from './lib/data'
@@ -62,13 +63,22 @@ function App() {
   const lastDay = own?.result.days[own.result.days.length - 1]
 
   if (lastDay?.pending) {
-    return <CheckIn date={lastDay.date} onDone={reload} />
+    return (
+      <CheckIn
+        date={lastDay.date}
+        userId={session.id}
+        userName={session.name}
+        currentStreak={own?.result.currentStreak ?? 0}
+        onDone={reload}
+      />
+    )
   }
 
   if (!own) return null
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <InstallBanner />
       {tab === 'home' && <Home session={session} leaderboard={leaderboard} />}
       {tab === 'ranking' && <Ranking session={session} leaderboard={leaderboard} />}
       {tab === 'feed' && <Feed all={all} />}
