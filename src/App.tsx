@@ -90,7 +90,7 @@ function App() {
       <InstallBanner />
       {tab === 'home' && <Home session={session} leaderboard={leaderboard} />}
       {tab === 'ranking' && <Ranking session={session} leaderboard={leaderboard} />}
-      {tab === 'feed' && <Feed all={all} />}
+      {tab === 'feed' && <Feed all={all} userId={session.id} isAdmin={own.user.isAdmin} />}
       {tab === 'perfil' && <Perfil own={own} />}
       <TabBar active={tab} onChange={navigate} />
     </div>

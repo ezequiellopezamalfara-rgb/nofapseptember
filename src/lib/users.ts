@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 export interface PublicUser {
   id: string
   name: string
+  isAdmin: boolean
 }
 
 export async function nameExists(name: string): Promise<boolean> {
@@ -28,5 +29,7 @@ export async function claimUser(name: string, pin: string): Promise<PublicUser> 
 
   const row = Array.isArray(data) ? data[0] : data
   if (!row) throw new Error('claim_user no devolvió resultado')
-  return { id: row.id, name: row.name }
+  // claim_user no devuelve is_admin — la sesión de la app no lo necesita, se
+  // lee de public_users (vía leaderboard) para todo lo que sí lo usa.
+  return { id: row.id, name: row.name, isAdmin: false }
 }

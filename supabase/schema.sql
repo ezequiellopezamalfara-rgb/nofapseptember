@@ -25,6 +25,7 @@ create table users (
   name text not null unique,
   pin_hash text not null,
   auth_id uuid unique references auth.users (id) on delete set null,
+  is_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -40,7 +41,7 @@ revoke all on users from anon, authenticated;
 -- todo acceso directo a `users` para anon/authenticated más arriba — si
 -- corriera con los privilegios del que consulta, fallaría siempre.
 create view public_users as
-  select id, name, created_at from users;
+  select id, name, created_at, is_admin from users;
 
 grant select on public_users to authenticated;
 
@@ -267,3 +268,64 @@ end;
 $$;
 
 grant execute on function confirm_check_in (date, text, jsonb) to authenticated;
+
+-- Mismo motivo que current_user_id(): una policy no puede consultar `users`
+-- directo (revocado más arriba), así que este chequeo también necesita
+-- privilegios elevados.
+create or replace function is_current_user_admin()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select coalesce((select is_admin from users where auth_id = auth.uid()), false);
+$$;
+
+grant execute on function is_current_user_admin () to authenticated;
+
+-- ============================================================================
+-- announcements: comunicados del mando (texto + foto opcional) para el feed.
+-- Solo lectura abierta; escritura restringida a usuarios con is_admin = true.
+-- ============================================================================
+
+create table announcements (
+  id uuid primary key default gen_random_uuid(),
+  author_id uuid not null references users (id) on delete cascade,
+  message text not null,
+  image_url text,
+  created_at timestamptz not null default now()
+);
+
+alter table announcements enable row level security;
+
+create policy "announcements_select_all"
+on announcements for select
+to authenticated
+using (true);
+
+create policy "announcements_insert_admin"
+on announcements for insert
+to authenticated
+with check (author_id = current_user_id() and is_current_user_admin());
+
+create policy "announcements_delete_admin"
+on announcements for delete
+to authenticated
+using (is_current_user_admin());
+
+-- Bucket público para las fotos de los comunicados (la app es privada de por
+-- sí, detrás del código de acceso + login — no hace falta URL firmada).
+insert into storage.buckets (id, name, public)
+values ('announcements', 'announcements', true)
+on conflict (id) do nothing;
+
+create policy "announcements_bucket_insert_admin"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'announcements' and is_current_user_admin());
+
+create policy "announcements_bucket_delete_admin"
+on storage.objects for delete
+to authenticated
+using (bucket_id = 'announcements' and is_current_user_admin());

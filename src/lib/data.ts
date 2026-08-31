@@ -16,6 +16,13 @@ interface EntryRow {
   entry_objectives: { objective_key: ObjectiveKey; completed: boolean }[]
 }
 
+interface PublicUserRow {
+  id: string
+  name: string
+  is_admin: boolean
+  created_at: string
+}
+
 /**
  * Todo lo que necesitan Ranking/Feed/Perfil: cada usuario con sus entradas
  * crudas. El puntaje se recalcula acá en cliente vía scoring.ts, nunca se
@@ -47,8 +54,8 @@ export async function fetchAllUsersWithEntries(): Promise<UserWithEntries[]> {
     entriesByUser.set(row.user_id, list)
   }
 
-  return (users as PublicUser[]).map((user) => ({
-    user,
-    entries: entriesByUser.get(user.id) ?? [],
+  return (users as PublicUserRow[]).map((row) => ({
+    user: { id: row.id, name: row.name, isAdmin: row.is_admin },
+    entries: entriesByUser.get(row.id) ?? [],
   }))
 }
