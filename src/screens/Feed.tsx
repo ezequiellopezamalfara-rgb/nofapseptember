@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { UserWithEntries } from '../lib/data'
 import { buildFeed } from '../lib/feed'
+import { isSingleEmoji } from '../lib/emoji'
 import {
   deleteAnnouncement,
   fetchAnnouncements,
@@ -35,6 +36,7 @@ interface ReactionsRowProps {
 function ReactionsRow({ announcement, userId, onChanged }: ReactionsRowProps) {
   const [picking, setPicking] = useState(false)
   const [draft, setDraft] = useState('')
+  const [draftError, setDraftError] = useState(false)
 
   async function handleTap(emoji: string) {
     if (emoji === announcement.myReaction) {
@@ -49,8 +51,13 @@ function ReactionsRow({ announcement, userId, onChanged }: ReactionsRowProps) {
     e.preventDefault()
     const emoji = draft.trim()
     if (!emoji) return
+    if (!isSingleEmoji(emoji)) {
+      setDraftError(true)
+      return
+    }
     await setReaction(announcement.id, userId, emoji)
     setDraft('')
+    setDraftError(false)
     setPicking(false)
     onChanged()
   }
@@ -76,14 +83,20 @@ function ReactionsRow({ announcement, userId, onChanged }: ReactionsRowProps) {
           <input
             autoFocus
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value)
+              setDraftError(false)
+            }}
             maxLength={8}
             placeholder="😀"
-            className="w-12 border border-ink-light/40 bg-paper px-1 py-0.5 text-center text-sm outline-none"
+            className={`w-12 border bg-paper px-1 py-0.5 text-center text-sm outline-none ${
+              draftError ? 'border-alert' : 'border-ink-light/40'
+            }`}
           />
           <button type="submit" className="font-stencil text-xs text-ink-light">
             ok
           </button>
+          {draftError && <span className="text-[0.6rem] text-alert">solo 1 emoji</span>}
         </form>
       ) : (
         <button
