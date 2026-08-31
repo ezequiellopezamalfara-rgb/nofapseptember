@@ -14,7 +14,7 @@ export function Feed({ all }: FeedProps) {
   const events = buildFeed(all, new Date())
 
   return (
-    <div className="flex-1 p-4 pb-24 pt-8">
+    <div className="flex-1 p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-8">
       <h1 className="mb-4 text-center text-xl text-brown-dark">Feed</h1>
       <div className="flex flex-col gap-2">
         {events.length === 0 && (

@@ -14,7 +14,7 @@ interface TabBarProps {
 
 export function TabBar({ active, onChange }: TabBarProps) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 flex border-t-2 border-ink bg-paper">
+    <nav className="fixed inset-x-0 bottom-0 flex border-t-2 border-ink bg-paper pb-[env(safe-area-inset-bottom)]">
       {TABS.map((t) => (
         <button
           key={t.id}

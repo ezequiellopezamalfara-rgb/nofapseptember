@@ -41,7 +41,7 @@ export function Home({ session, leaderboard }: HomeProps) {
   if (!own) return null
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-8 p-6 pb-24 pt-12 text-center">
+    <div className="flex flex-1 flex-col items-center gap-8 p-6 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-12 text-center">
       <div>
         <p className="font-stencil text-xs text-ink-light">Racha actual</p>
         <p className="text-7xl text-brown-dark">{own.result.currentStreak}</p>
