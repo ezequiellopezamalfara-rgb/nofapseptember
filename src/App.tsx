@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { InstallBanner } from './components/InstallBanner'
 import { TabBar, type Tab } from './components/TabBar'
-import { getAppSession, type AppSession } from './lib/auth'
+import { clearAppSession, getAppSession, type AppSession } from './lib/auth'
 import { fetchAllUsersWithEntries, type UserWithEntries } from './lib/data'
 import { buildLeaderboard } from './lib/leaderboard'
 import { CheckIn } from './screens/CheckIn'
@@ -46,11 +46,22 @@ function App() {
     if (session) void reload()
   }, [session])
 
+  const leaderboard = all ? buildLeaderboard(all, new Date()) : null
+  const own = leaderboard?.find((r) => r.user.id === session?.id)
+
+  useEffect(() => {
+    // Sesión local sin usuario real detrás (ej. borrado a mano): reinicia el alta.
+    if (session && leaderboard && !own) {
+      clearAppSession()
+      setSession(null)
+    }
+  }, [session, leaderboard, own])
+
   if (!session) {
     return <Entrada onDone={setSession} />
   }
 
-  if (!all) {
+  if (!all || !leaderboard) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <p className="font-stencil text-sm text-ink-light">Cargando...</p>
@@ -58,8 +69,6 @@ function App() {
     )
   }
 
-  const leaderboard = buildLeaderboard(all, new Date())
-  const own = leaderboard.find((r) => r.user.id === session.id)
   const lastDay = own?.result.days[own.result.days.length - 1]
 
   if (lastDay?.pending) {

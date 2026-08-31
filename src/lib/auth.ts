@@ -30,3 +30,7 @@ export function getAppSession(): AppSession | null {
 export function setAppSession(session: AppSession): void {
   localStorage.setItem(APP_SESSION_KEY, JSON.stringify(session))
 }
+
+export function clearAppSession(): void {
+  localStorage.removeItem(APP_SESSION_KEY)
+}
