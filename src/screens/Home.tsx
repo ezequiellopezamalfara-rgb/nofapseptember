@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { RankBadge } from '../components/RankBadge'
 import type { AppSession } from '../lib/auth'
 import { argentinaEndOfDayUTC, toArgentinaDate } from '../lib/date'
 import type { RankedUser } from '../lib/leaderboard'
@@ -49,6 +50,8 @@ export function Home({ session, leaderboard }: HomeProps) {
           {rankForStreak(own.result.currentStreak)}
         </p>
       </div>
+
+      <RankBadge streak={own.result.currentStreak} size={200} />
 
       <div className="grid w-full max-w-xs grid-cols-2 gap-3">
         <div className="border-2 border-ink bg-cream p-3">
