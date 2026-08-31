@@ -35,8 +35,32 @@ npm run build
    SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... PIN_PEPPER=... node scripts/seed.mjs
    ```
 
-## Notificaciones push y PWA
+## Notificaciones push (VAPID)
 
-Todavía no implementado (llega después del arranque del challenge). El README se actualiza con
-la generación de claves VAPID y el paso de instalar la PWA a pantalla de inicio cuando esa parte
-esté lista.
+1. Generá el par de claves:
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+2. Completá en `.env` (y en las variables de entorno de Vercel):
+   - `VITE_VAPID_PUBLIC_KEY` y `VAPID_PUBLIC_KEY` — la misma clave pública en ambas.
+   - `VAPID_PRIVATE_KEY` — la clave privada.
+   - `VAPID_SUBJECT` — `mailto:` de contacto (lo pide la spec de Web Push).
+   - `CRON_SECRET` — cualquier valor random; Vercel Cron lo manda como Bearer token para
+     autenticar `/api/cron/reminders`.
+3. En Vercel, `vercel.json` ya define los dos cron jobs (09:00 y 21:00 hora Argentina, en UTC:
+   `12:00` y `00:00`) apuntando a `/api/cron/reminders`. Se activan solos al deployar — no hace
+   falta configurarlos a mano en el dashboard.
+
+## Instalar la PWA (obligatorio para recibir avisos)
+
+**En iOS, Safari no entrega Web Push a menos que la app esté instalada a la pantalla de inicio**
+(iOS 16.4+). Sin ese paso, activar notificaciones no tiene efecto — la app lo detecta y muestra
+un cartel con las instrucciones, pero avisale al grupo igual antes de que arranque el challenge:
+
+1. Abrir el link de la app en Safari (no en Chrome ni otro navegador de terceros en iOS).
+2. Tocar el ícono de **Compartir** (el cuadrado con la flecha hacia arriba).
+3. Elegir **Agregar a pantalla de inicio**.
+4. Abrir la app desde el ícono nuevo (no desde Safari) — recién ahí el botón de "Activar
+   notificaciones" del alta funciona.
+
+En Android (Chrome) no hace falta este paso: el botón de activar notificaciones alcanza.
