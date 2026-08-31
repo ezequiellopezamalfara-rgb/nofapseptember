@@ -1,27 +1,76 @@
 import { notifyAnnouncement } from './notify'
 import { supabase } from './supabase'
 
+export interface ReactionCount {
+  emoji: string
+  count: number
+}
+
 export interface Announcement {
   id: string
   message: string
   imageUrl: string | null
   createdAt: string
+  reactionCounts: ReactionCount[]
+  myReaction: string | null
 }
 
-export async function fetchAnnouncements(): Promise<Announcement[]> {
+interface AnnouncementRow {
+  id: string
+  message: string
+  image_url: string | null
+  created_at: string
+  announcement_reactions: { user_id: string; emoji: string }[]
+}
+
+export async function fetchAnnouncements(currentUserId: string): Promise<Announcement[]> {
   const { data, error } = await supabase
     .from('announcements')
-    .select('id, message, image_url, created_at')
+    .select('id, message, image_url, created_at, announcement_reactions(user_id, emoji)')
     .order('created_at', { ascending: false })
 
   if (error) throw error
 
-  return data.map((row) => ({
-    id: row.id,
-    message: row.message,
-    imageUrl: row.image_url,
-    createdAt: row.created_at,
-  }))
+  return (data as AnnouncementRow[]).map((row) => {
+    const counts = new Map<string, number>()
+    let myReaction: string | null = null
+    for (const r of row.announcement_reactions) {
+      counts.set(r.emoji, (counts.get(r.emoji) ?? 0) + 1)
+      if (r.user_id === currentUserId) myReaction = r.emoji
+    }
+    return {
+      id: row.id,
+      message: row.message,
+      imageUrl: row.image_url,
+      createdAt: row.created_at,
+      reactionCounts: [...counts.entries()].map(([emoji, count]) => ({ emoji, count })),
+      myReaction,
+    }
+  })
+}
+
+/** Reemplaza la reacción propia a este comunicado (una por usuario, vía upsert). */
+export async function setReaction(
+  announcementId: string,
+  userId: string,
+  emoji: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('announcement_reactions')
+    .upsert(
+      { announcement_id: announcementId, user_id: userId, emoji },
+      { onConflict: 'announcement_id,user_id' },
+    )
+  if (error) throw error
+}
+
+export async function removeReaction(announcementId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('announcement_reactions')
+    .delete()
+    .eq('announcement_id', announcementId)
+    .eq('user_id', userId)
+  if (error) throw error
 }
 
 /**

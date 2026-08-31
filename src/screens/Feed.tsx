@@ -5,6 +5,8 @@ import {
   deleteAnnouncement,
   fetchAnnouncements,
   postAnnouncement,
+  removeReaction,
+  setReaction,
   type Announcement,
 } from '../lib/announcements'
 
@@ -24,6 +26,77 @@ function formatDateTime(iso: string): string {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
 }
 
+interface ReactionsRowProps {
+  announcement: Announcement
+  userId: string
+  onChanged: () => void
+}
+
+function ReactionsRow({ announcement, userId, onChanged }: ReactionsRowProps) {
+  const [picking, setPicking] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  async function handleTap(emoji: string) {
+    if (emoji === announcement.myReaction) {
+      await removeReaction(announcement.id, userId)
+    } else {
+      await setReaction(announcement.id, userId, emoji)
+    }
+    onChanged()
+  }
+
+  async function handleSubmitDraft(e: React.FormEvent) {
+    e.preventDefault()
+    const emoji = draft.trim()
+    if (!emoji) return
+    await setReaction(announcement.id, userId, emoji)
+    setDraft('')
+    setPicking(false)
+    onChanged()
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {announcement.reactionCounts.map((r) => (
+        <button
+          key={r.emoji}
+          onClick={() => handleTap(r.emoji)}
+          className={`flex items-center gap-1 border px-1.5 py-0.5 text-xs ${
+            r.emoji === announcement.myReaction
+              ? 'border-brown-dark bg-beige'
+              : 'border-ink-light/40'
+          }`}
+        >
+          <span>{r.emoji}</span>
+          <span className="font-stencil text-[0.6rem] text-ink-light">{r.count}</span>
+        </button>
+      ))}
+      {picking ? (
+        <form onSubmit={handleSubmitDraft} className="flex items-center gap-1">
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={8}
+            placeholder="😀"
+            className="w-12 border border-ink-light/40 bg-paper px-1 py-0.5 text-center text-sm outline-none"
+          />
+          <button type="submit" className="font-stencil text-xs text-ink-light">
+            ok
+          </button>
+        </form>
+      ) : (
+        <button
+          onClick={() => setPicking(true)}
+          className="border border-dashed border-ink-light/40 px-1.5 py-0.5 text-xs text-ink-light"
+        >
+          +
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function Feed({ all, userId, isAdmin }: FeedProps) {
   const events = buildFeed(all, new Date())
   const [announcements, setAnnouncements] = useState<Announcement[] | null>(null)
@@ -34,12 +107,13 @@ export function Feed({ all, userId, isAdmin }: FeedProps) {
   const [error, setError] = useState<string | null>(null)
 
   async function reloadAnnouncements() {
-    setAnnouncements(await fetchAnnouncements())
+    setAnnouncements(await fetchAnnouncements(userId))
   }
 
   useEffect(() => {
     void reloadAnnouncements()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- userId es estable durante la vida de Feed
+  }, [userId])
 
   async function handlePost(e: React.FormEvent) {
     e.preventDefault()
@@ -152,6 +226,11 @@ export function Feed({ all, userId, isAdmin }: FeedProps) {
                   className="mt-2 w-full border-2 border-ink"
                 />
               )}
+              <ReactionsRow
+                announcement={item.announcement}
+                userId={userId}
+                onChanged={reloadAnnouncements}
+              />
               <div className="mt-1 flex items-center justify-between">
                 <p className="font-stencil text-[0.6rem] text-ink-light">
                   {formatDateTime(item.announcement.createdAt)}

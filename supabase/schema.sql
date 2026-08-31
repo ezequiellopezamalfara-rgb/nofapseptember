@@ -329,3 +329,41 @@ create policy "announcements_bucket_delete_admin"
 on storage.objects for delete
 to authenticated
 using (bucket_id = 'announcements' and is_current_user_admin());
+
+-- ============================================================================
+-- announcement_reactions: cualquier usuario (no solo admin) puede reaccionar
+-- a un comunicado con cualquier emoji — una reacción por usuario y comunicado
+-- (reaccionar de nuevo reemplaza el emoji anterior, vía upsert).
+-- ============================================================================
+
+create table announcement_reactions (
+  id uuid primary key default gen_random_uuid(),
+  announcement_id uuid not null references announcements (id) on delete cascade,
+  user_id uuid not null references users (id) on delete cascade,
+  emoji text not null,
+  created_at timestamptz not null default now(),
+  unique (announcement_id, user_id)
+);
+
+alter table announcement_reactions enable row level security;
+
+create policy "announcement_reactions_select_all"
+on announcement_reactions for select
+to authenticated
+using (true);
+
+create policy "announcement_reactions_insert_own"
+on announcement_reactions for insert
+to authenticated
+with check (user_id = current_user_id());
+
+create policy "announcement_reactions_update_own"
+on announcement_reactions for update
+to authenticated
+using (user_id = current_user_id())
+with check (user_id = current_user_id());
+
+create policy "announcement_reactions_delete_own"
+on announcement_reactions for delete
+to authenticated
+using (user_id = current_user_id());
