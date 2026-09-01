@@ -15,9 +15,11 @@ interface HomeProps {
 function nextReminder(now: Date): Date {
   const todayAR = toArgentinaDate(now)
 
-  if (compareDates(todayAR, CHALLENGE_START_DATE) < 0) {
-    // Todavía no arrancó: nadie tiene día pendiente, así que ningún
-    // recordatorio de hoy manda nada. El primero real es al día
+  if (compareDates(addDays(todayAR, -1), CHALLENGE_START_DATE) < 0) {
+    // "Ayer" (relativo a `now`) todavía no es un día válido del challenge
+    // — ni siquiera el propio día 1 tiene nada pendiente hasta el 2/9,
+    // porque el día 1 recién se puede reportar desde esa fecha. Ningún
+    // recordatorio de hoy manda nada; el primero real es al día
     // siguiente del inicio, cuando el día 1 pasa a estar pendiente.
     return argentinaTimeUTC(addDays(CHALLENGE_START_DATE, 1), 9)
   }
