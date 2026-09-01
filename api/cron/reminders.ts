@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { EVENING_LINES, MORNING_LINES, randomLine } from '../_lib/reminderLines.js'
 import { supabaseAdmin } from '../_lib/supabaseAdmin.js'
 import { sendToSubscriptions } from '../_lib/webPush.js'
 import { scoreChallenge, type RawEntry } from '../../src/lib/scoring.js'
@@ -75,9 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   await sendToSubscriptions(admin, subscriptions ?? [], {
     title: isEvening ? 'Quedan menos de 3 horas' : 'Reportá el día de ayer',
-    body: isEvening
-      ? 'Todavía no reportaste — el día se marca caído a las 23:59.'
-      : 'Abrí la app y contá cómo te fue.',
+    body: randomLine(isEvening ? EVENING_LINES : MORNING_LINES),
   })
 
   res.status(200).json({ sent: subscriptions?.length ?? 0, pendingUsers: pendingUserIds.length })
