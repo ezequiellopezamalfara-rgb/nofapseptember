@@ -30,13 +30,15 @@ function formatDateTime(iso: string): string {
 interface ReactionsRowProps {
   announcement: Announcement
   userId: string
+  nameById: Map<string, string>
   onChanged: () => void
 }
 
-function ReactionsRow({ announcement, userId, onChanged }: ReactionsRowProps) {
+function ReactionsRow({ announcement, userId, nameById, onChanged }: ReactionsRowProps) {
   const [picking, setPicking] = useState(false)
   const [draft, setDraft] = useState('')
   const [draftError, setDraftError] = useState(false)
+  const [expanded, setExpanded] = useState<string | null>(null)
 
   async function handleTap(emoji: string) {
     if (emoji === announcement.myReaction) {
@@ -63,20 +65,32 @@ function ReactionsRow({ announcement, userId, onChanged }: ReactionsRowProps) {
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-      {announcement.reactionCounts.map((r) => (
-        <button
-          key={r.emoji}
-          onClick={() => handleTap(r.emoji)}
-          className={`flex items-center gap-1 border px-1.5 py-0.5 text-xs ${
-            r.emoji === announcement.myReaction
-              ? 'border-brown-dark bg-beige'
-              : 'border-ink-light/40'
-          }`}
-        >
-          <span>{r.emoji}</span>
-          <span className="font-stencil text-[0.6rem] text-ink-light">{r.count}</span>
-        </button>
+    <div className="mt-2 flex flex-wrap items-start gap-1.5">
+      {announcement.reactions.map((r) => (
+        <div key={r.emoji} className="flex flex-col items-start">
+          <div
+            className={`flex items-center border text-xs ${
+              r.emoji === announcement.myReaction
+                ? 'border-brown-dark bg-beige'
+                : 'border-ink-light/40'
+            }`}
+          >
+            <button onClick={() => handleTap(r.emoji)} className="px-1.5 py-0.5">
+              {r.emoji}
+            </button>
+            <button
+              onClick={() => setExpanded(expanded === r.emoji ? null : r.emoji)}
+              className="font-stencil border-l border-ink-light/40 px-1.5 py-0.5 text-[0.6rem] text-ink-light"
+            >
+              {r.userIds.length}
+            </button>
+          </div>
+          {expanded === r.emoji && (
+            <div className="mt-0.5 max-w-[12rem] border border-ink-light/40 bg-paper px-2 py-1 font-serif text-[0.65rem] text-ink-light">
+              {r.userIds.map((id) => nameById.get(id) ?? '???').join(', ')}
+            </div>
+          )}
+        </div>
       ))}
       {picking ? (
         <form onSubmit={handleSubmitDraft} className="flex items-center gap-1">
@@ -112,6 +126,7 @@ function ReactionsRow({ announcement, userId, onChanged }: ReactionsRowProps) {
 
 export function Feed({ all, userId, isAdmin }: FeedProps) {
   const events = buildFeed(all, new Date())
+  const nameById = new Map(all.map((u) => [u.user.id, u.user.name]))
   const [announcements, setAnnouncements] = useState<Announcement[] | null>(null)
   const [composing, setComposing] = useState(false)
   const [message, setMessage] = useState('')
@@ -242,6 +257,7 @@ export function Feed({ all, userId, isAdmin }: FeedProps) {
               <ReactionsRow
                 announcement={item.announcement}
                 userId={userId}
+                nameById={nameById}
                 onChanged={reloadAnnouncements}
               />
               <div className="mt-1 flex items-center justify-between">

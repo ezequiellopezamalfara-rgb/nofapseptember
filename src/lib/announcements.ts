@@ -1,9 +1,9 @@
 import { notifyAnnouncement } from './notify'
 import { supabase } from './supabase'
 
-export interface ReactionCount {
+export interface ReactionGroup {
   emoji: string
-  count: number
+  userIds: string[]
 }
 
 export interface Announcement {
@@ -11,7 +11,7 @@ export interface Announcement {
   message: string
   imageUrl: string | null
   createdAt: string
-  reactionCounts: ReactionCount[]
+  reactions: ReactionGroup[]
   myReaction: string | null
 }
 
@@ -32,10 +32,12 @@ export async function fetchAnnouncements(currentUserId: string): Promise<Announc
   if (error) throw error
 
   return (data as AnnouncementRow[]).map((row) => {
-    const counts = new Map<string, number>()
+    const groups = new Map<string, string[]>()
     let myReaction: string | null = null
     for (const r of row.announcement_reactions) {
-      counts.set(r.emoji, (counts.get(r.emoji) ?? 0) + 1)
+      const userIds = groups.get(r.emoji) ?? []
+      userIds.push(r.user_id)
+      groups.set(r.emoji, userIds)
       if (r.user_id === currentUserId) myReaction = r.emoji
     }
     return {
@@ -43,7 +45,7 @@ export async function fetchAnnouncements(currentUserId: string): Promise<Announc
       message: row.message,
       imageUrl: row.image_url,
       createdAt: row.created_at,
-      reactionCounts: [...counts.entries()].map(([emoji, count]) => ({ emoji, count })),
+      reactions: [...groups.entries()].map(([emoji, userIds]) => ({ emoji, userIds })),
       myReaction,
     }
   })
