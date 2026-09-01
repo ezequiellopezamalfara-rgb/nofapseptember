@@ -28,6 +28,12 @@ export function argentinaEndOfDayUTC(date: CalendarDate): Date {
   return new Date(Date.UTC(y, m - 1, d, 23 - AR_OFFSET_HOURS, 59, 59, 999))
 }
 
+/** Instante (UTC) de una hora dada (0-23) de ese día de calendario en Argentina. */
+export function argentinaTimeUTC(date: CalendarDate, hour: number, minute = 0): Date {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d, hour - AR_OFFSET_HOURS, minute, 0, 0))
+}
+
 export function compareDates(a: CalendarDate, b: CalendarDate): number {
   return a < b ? -1 : a > b ? 1 : 0
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { RankBadge } from '../components/RankBadge'
 import type { AppSession } from '../lib/auth'
-import { argentinaEndOfDayUTC, toArgentinaDate } from '../lib/date'
+import { CHALLENGE_START_DATE } from '../lib/challenge'
+import { addDays, argentinaTimeUTC, compareDates, toArgentinaDate } from '../lib/date'
 import type { RankedUser } from '../lib/leaderboard'
 import { rankForStreak } from '../lib/ranks'
 
@@ -10,9 +11,22 @@ interface HomeProps {
   leaderboard: RankedUser[]
 }
 
-function nextWindowOpen(now: Date): Date {
+/** Próximo recordatorio real (9:00 o 21:00 AR) — no la medianoche técnica en la que abre la ventana. */
+function nextReminder(now: Date): Date {
   const todayAR = toArgentinaDate(now)
-  return new Date(argentinaEndOfDayUTC(todayAR).getTime() + 1)
+
+  if (compareDates(todayAR, CHALLENGE_START_DATE) < 0) {
+    // Todavía no arrancó: nadie tiene día pendiente, así que ningún
+    // recordatorio de hoy manda nada. El primero real es al día
+    // siguiente del inicio, cuando el día 1 pasa a estar pendiente.
+    return argentinaTimeUTC(addDays(CHALLENGE_START_DATE, 1), 9)
+  }
+
+  const nineAM = argentinaTimeUTC(todayAR, 9)
+  if (now.getTime() < nineAM.getTime()) return nineAM
+  const ninePM = argentinaTimeUTC(todayAR, 21)
+  if (now.getTime() < ninePM.getTime()) return ninePM
+  return argentinaTimeUTC(addDays(todayAR, 1), 9)
 }
 
 function useCountdown(target: Date): string {
@@ -37,7 +51,7 @@ function useCountdown(target: Date): string {
 export function Home({ session, leaderboard }: HomeProps) {
   const own = leaderboard.find((r) => r.user.id === session.id)
   const position = own ? leaderboard.indexOf(own) + 1 : null
-  const countdown = useCountdown(nextWindowOpen(new Date()))
+  const countdown = useCountdown(nextReminder(new Date()))
 
   if (!own) return null
 
