@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { RankBadge } from '../components/RankBadge'
 import type { AppSession } from '../lib/auth'
-import { CHALLENGE_START_DATE } from '../lib/challenge'
-import { addDays, argentinaTimeUTC, compareDates, toArgentinaDate } from '../lib/date'
+import { argentinaEndOfDayUTC, toArgentinaDate } from '../lib/date'
 import type { RankedUser } from '../lib/leaderboard'
 import { rankForStreak } from '../lib/ranks'
 
@@ -11,24 +10,10 @@ interface HomeProps {
   leaderboard: RankedUser[]
 }
 
-/** Próximo recordatorio real (9:00 o 21:00 AR) — no la medianoche técnica en la que abre la ventana. */
-function nextReminder(now: Date): Date {
+/** Próxima medianoche AR: el instante real en que se habilita el check-in del día. */
+function nextWindowOpen(now: Date): Date {
   const todayAR = toArgentinaDate(now)
-
-  if (compareDates(addDays(todayAR, -1), CHALLENGE_START_DATE) < 0) {
-    // "Ayer" (relativo a `now`) todavía no es un día válido del challenge
-    // — ni siquiera el propio día 1 tiene nada pendiente hasta el 2/9,
-    // porque el día 1 recién se puede reportar desde esa fecha. Ningún
-    // recordatorio de hoy manda nada; el primero real es al día
-    // siguiente del inicio, cuando el día 1 pasa a estar pendiente.
-    return argentinaTimeUTC(addDays(CHALLENGE_START_DATE, 1), 9)
-  }
-
-  const nineAM = argentinaTimeUTC(todayAR, 9)
-  if (now.getTime() < nineAM.getTime()) return nineAM
-  const ninePM = argentinaTimeUTC(todayAR, 21)
-  if (now.getTime() < ninePM.getTime()) return ninePM
-  return argentinaTimeUTC(addDays(todayAR, 1), 9)
+  return new Date(argentinaEndOfDayUTC(todayAR).getTime() + 1)
 }
 
 function useCountdown(target: Date): string {
@@ -53,7 +38,7 @@ function useCountdown(target: Date): string {
 export function Home({ session, leaderboard }: HomeProps) {
   const own = leaderboard.find((r) => r.user.id === session.id)
   const position = own ? leaderboard.indexOf(own) + 1 : null
-  const countdown = useCountdown(nextReminder(new Date()))
+  const countdown = useCountdown(nextWindowOpen(new Date()))
 
   if (!own) return null
 
