@@ -125,7 +125,7 @@ function ReactionsRow({ announcement, userId, nameById, onChanged }: ReactionsRo
 }
 
 export function Feed({ all, userId, isAdmin }: FeedProps) {
-  const events = buildFeed(all, new Date())
+  const summaries = buildFeed(all, new Date())
   const nameById = new Map(all.map((u) => [u.user.id, u.user.name]))
   const [announcements, setAnnouncements] = useState<Announcement[] | null>(null)
   const [composing, setComposing] = useState(false)
@@ -167,15 +167,15 @@ export function Feed({ all, userId, isAdmin }: FeedProps) {
   }
 
   type Item =
-    | { key: string; sortKey: string; kind: 'event'; event: (typeof events)[number] }
+    | { key: string; sortKey: string; kind: 'summary'; summary: (typeof summaries)[number] }
     | { key: string; sortKey: string; kind: 'announcement'; announcement: Announcement }
 
   const items: Item[] = [
-    ...events.map((e) => ({
-      key: e.id,
-      sortKey: `${e.date}T12:00:00`,
-      kind: 'event' as const,
-      event: e,
+    ...summaries.map((s) => ({
+      key: s.date,
+      sortKey: `${s.date}T12:00:00`,
+      kind: 'summary' as const,
+      summary: s,
     })),
     ...(announcements ?? []).map((a) => ({
       key: a.id,
@@ -186,7 +186,7 @@ export function Feed({ all, userId, isAdmin }: FeedProps) {
   ].sort((a, b) => (a.sortKey < b.sortKey ? 1 : a.sortKey > b.sortKey ? -1 : 0))
 
   return (
-    <div className="flex-1 p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-8">
+    <div className="flex-1 p-4 pt-8 pb-6">
       <h1 className="mb-4 text-center text-xl text-brown-dark">Feed</h1>
 
       {isAdmin && (
@@ -276,25 +276,27 @@ export function Feed({ all, userId, isAdmin }: FeedProps) {
             </div>
           ) : (
             <div key={item.key} className="border-2 border-ink bg-cream px-3 py-2">
-              <p className="font-serif text-sm text-ink">
-                {item.event.type === 'en_pie' && (
-                  <>
-                    <strong>{item.event.userName}</strong> sigue en pie (día {item.event.streakDay})
-                  </>
-                )}
-                {item.event.type === 'caido' && (
-                  <span className="text-alert">
-                    <strong>{item.event.userName}</strong> cayó en combate
-                  </span>
-                )}
-                {item.event.type === 'ascenso' && (
-                  <>
-                    <strong>{item.event.userName}</strong> ascendió a {item.event.rank}
-                  </>
-                )}
+              <p className="font-stencil text-[0.65rem] text-ink-light">
+                Parte del día {item.summary.dayNumber}
               </p>
-              <p className="font-stencil text-[0.6rem] text-ink-light">
-                {formatDate(item.event.date)}
+              <div className="mt-1 flex flex-col gap-1 font-serif text-sm text-ink">
+                {item.summary.fallen.length === 0 && item.summary.promoted.length === 0 && (
+                  <p>El pelotón se mantuvo firme. Sin bajas ni ascensos.</p>
+                )}
+                {item.summary.fallen.length > 0 && (
+                  <p className="text-alert">
+                    <strong>Bajas:</strong> {item.summary.fallen.join(', ')}.
+                  </p>
+                )}
+                {item.summary.promoted.length > 0 && (
+                  <p>
+                    <strong>Ascensos:</strong>{' '}
+                    {item.summary.promoted.map((p) => `${p.name} a ${p.rank}`).join(', ')}.
+                  </p>
+                )}
+              </div>
+              <p className="font-stencil mt-1 text-[0.6rem] text-ink-light">
+                {formatDate(item.summary.date)}
               </p>
             </div>
           ),

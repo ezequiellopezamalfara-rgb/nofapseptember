@@ -86,12 +86,14 @@ function App() {
   if (!own) return null
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <InstallBanner />
-      {tab === 'home' && <Home session={session} leaderboard={leaderboard} />}
-      {tab === 'ranking' && <Ranking session={session} leaderboard={leaderboard} />}
-      {tab === 'feed' && <Feed all={all} userId={session.id} isAdmin={own.user.isAdmin} />}
-      {tab === 'perfil' && <Perfil own={own} />}
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <main className="flex-1 overflow-y-auto">
+        <InstallBanner />
+        {tab === 'home' && <Home session={session} leaderboard={leaderboard} />}
+        {tab === 'ranking' && <Ranking session={session} leaderboard={leaderboard} />}
+        {tab === 'feed' && <Feed all={all} userId={session.id} isAdmin={own.user.isAdmin} />}
+        {tab === 'perfil' && <Perfil own={own} />}
+      </main>
       <TabBar active={tab} onChange={navigate} />
     </div>
   )

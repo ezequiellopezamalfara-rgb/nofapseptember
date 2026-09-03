@@ -45,7 +45,7 @@ export function Perfil({ own }: PerfilProps) {
   const [selected, setSelected] = useState<GridDay | null>(null)
 
   return (
-    <div className="flex-1 p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-8">
+    <div className="flex-1 p-4 pt-8 pb-6">
       <h1 className="mb-1 text-center text-xl text-brown-dark">{own.user.name}</h1>
       <p className="mb-4 text-center font-stencil text-xs text-ink-light">
         {own.result.totalPoints} puntos totales
