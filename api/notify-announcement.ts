@@ -19,7 +19,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { data: subscriptions, error } = await admin
     .from('push_subscriptions')
     .select('id, endpoint, p256dh, auth')
-    .neq('user_id', authorId)
 
   if (error) {
     res.status(500).json({ error: error.message })
