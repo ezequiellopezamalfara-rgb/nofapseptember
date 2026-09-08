@@ -15,7 +15,7 @@ interface UserRow {
   id: string
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function remindersHandler(req: VercelRequest, res: VercelResponse) {
   if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     res.status(401).json({ error: 'Unauthorized' })
     return
