@@ -1,13 +1,26 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toArgentinaDate } from '../lib/date'
 
 const MOURNING_DATE = '2026-09-10'
+const isMourningDay = toArgentinaDate(new Date()) === MOURNING_DATE
 
 export function FuneralTaps() {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  if (toArgentinaDate(new Date()) !== MOURNING_DATE) return null
+  useEffect(() => {
+    if (!isMourningDay) return
+    const audio = audioRef.current
+    if (!audio) return
+
+    // Los navegadores bloquean el autoplay con sonido sin interacción previa:
+    // si play() falla, arrancamos apenas el usuario toque cualquier cosa.
+    audio.play().catch(() => {
+      document.addEventListener('pointerdown', () => void audio.play(), { once: true })
+    })
+  }, [])
+
+  if (!isMourningDay) return null
 
   function toggle() {
     const audio = audioRef.current
@@ -17,12 +30,17 @@ export function FuneralTaps() {
     } else {
       void audio.play()
     }
-    setPlaying(!playing)
   }
 
   return (
     <>
-      <audio ref={audioRef} src="/trompeta-funeral.mp3" loop />
+      <audio
+        ref={audioRef}
+        src="/trompeta-funeral.mp3"
+        loop
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+      />
       <button
         onClick={toggle}
         aria-label={playing ? 'Pausar trompeta funeral' : 'Reproducir trompeta funeral'}
