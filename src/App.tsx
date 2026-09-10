@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FuneralTaps } from './components/FuneralTaps'
 import { InstallBanner } from './components/InstallBanner'
 import { TabBar, type Tab } from './components/TabBar'
 import { clearAppSession, getAppSession, type AppSession } from './lib/auth'
@@ -58,14 +59,22 @@ function App() {
   }, [session, leaderboard, own])
 
   if (!session) {
-    return <Entrada onDone={setSession} />
+    return (
+      <>
+        <Entrada onDone={setSession} />
+        <FuneralTaps />
+      </>
+    )
   }
 
   if (!all || !leaderboard) {
     return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <p className="font-stencil text-sm text-ink-light">Cargando...</p>
-      </div>
+      <>
+        <div className="flex min-h-dvh items-center justify-center">
+          <p className="font-stencil text-sm text-ink-light">Cargando...</p>
+        </div>
+        <FuneralTaps />
+      </>
     )
   }
 
@@ -73,13 +82,16 @@ function App() {
 
   if (lastDay?.pending) {
     return (
-      <CheckIn
-        date={lastDay.date}
-        userId={session.id}
-        userName={session.name}
-        currentStreak={own?.result.currentStreak ?? 0}
-        onDone={reload}
-      />
+      <>
+        <CheckIn
+          date={lastDay.date}
+          userId={session.id}
+          userName={session.name}
+          currentStreak={own?.result.currentStreak ?? 0}
+          onDone={reload}
+        />
+        <FuneralTaps />
+      </>
     )
   }
 
@@ -95,6 +107,7 @@ function App() {
         {tab === 'perfil' && <Perfil own={own} />}
       </main>
       <TabBar active={tab} onChange={navigate} />
+      <FuneralTaps />
     </div>
   )
 }
